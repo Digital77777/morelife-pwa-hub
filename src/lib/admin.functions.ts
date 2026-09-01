@@ -304,7 +304,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       await sendPushToUser(order.user_id, {
         title: message.title,
         body: `${order.reference} — ${message.body}`,
-        url: `/orders/${order.id}`,
+        url: "/orders",
         tag: `order-${order.id}`,
       });
     }
