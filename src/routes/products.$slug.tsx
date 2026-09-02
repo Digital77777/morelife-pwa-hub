@@ -60,6 +60,10 @@ function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
+  useEffect(() => {
+    if (product) track("product_viewed", { slug: product.slug, name: product.name });
+  }, [product]);
+
   if (!product) return null;
 
   const addToBag = () => {
@@ -74,6 +78,12 @@ function ProductDetail() {
       quantity,
     );
     setAdded(true);
+    track("add_to_cart", {
+      slug: product.slug,
+      name: product.name,
+      quantity,
+      value: product.price * quantity,
+    });
     toast.success(`${product.name} added to your bag`);
     setTimeout(() => setAdded(false), 1800);
   };
