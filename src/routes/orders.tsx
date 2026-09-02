@@ -23,10 +23,14 @@ function Orders() {
   const { session, loading } = useSession();
   const [queued, setQueued] = useState(0);
 
-  useEffect(
-    () => subscribeToOutbox((items) => setQueued(items.filter((i) => i.kind === "order").length)),
-    [],
-  );
+  useEffect(() => {
+    const unsubscribe = subscribeToOutbox((items) =>
+      setQueued(items.filter((i) => i.kind === "order").length),
+    );
+    return () => {
+      unsubscribe();
+    };
+  }, []);
   const fetchOrders = useServerFn(listMyOrders);
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders"],
