@@ -17,6 +17,7 @@ const MORE_LINKS = [
   { to: "/about", label: "About the Club" },
   { to: "/contact", label: "Contact" },
   { to: "/membership", label: "Membership" },
+  { to: "/admin", label: "Club Admin" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -30,6 +31,7 @@ function Auth() {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        track("membership_signin", { method: "password" });
         navigate({ to: "/membership" });
       } else {
         const { error } = await supabase.auth.signUp({
@@ -38,6 +40,7 @@ function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        track("membership_signup", { method: "password" });
         toast.success("Check your email to confirm your membership.");
       }
     } catch (error) {
@@ -56,6 +59,7 @@ function Auth() {
       return;
     }
     if (result.redirected) return;
+    track("membership_signin", { method: "google" });
     navigate({ to: "/membership" });
   };
 
