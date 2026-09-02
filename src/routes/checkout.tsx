@@ -29,6 +29,23 @@ function Checkout() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    track("checkout_started", { items: lines.length, value: subtotal });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   if (loading) return <div className="px-4 py-16 text-sm text-muted-foreground">Loading…</div>;
 
