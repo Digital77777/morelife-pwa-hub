@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { listMyOrders } from "@/lib/orders.functions";
 import { formatRand } from "@/lib/cart";
 import { useSession } from "@/hooks/use-session";
+import { useEffect, useState } from "react";
+import { subscribeToOutbox } from "@/lib/outbox";
 
 export const Route = createFileRoute("/orders")({
   head: () => ({
@@ -19,6 +21,12 @@ export const Route = createFileRoute("/orders")({
 
 function Orders() {
   const { session, loading } = useSession();
+  const [queued, setQueued] = useState(0);
+
+  useEffect(
+    () => subscribeToOutbox((items) => setQueued(items.filter((i) => i.kind === "order").length)),
+    [],
+  );
   const fetchOrders = useServerFn(listMyOrders);
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders"],
@@ -46,6 +54,12 @@ function Orders() {
   return (
     <div className="px-4 py-8">
       <h1 className="text-4xl leading-none">Your orders</h1>
+      {queued > 0 && (
+        <p className="mt-4 rounded-md border border-gold/40 bg-card p-3 text-xs text-muted-foreground">
+          {queued} order{queued === 1 ? "" : "s"} waiting to send. They&apos;ll go through
+          automatically once you&apos;re back online.
+        </p>
+      )}
       {isLoading ? (
         <p className="mt-6 text-sm text-muted-foreground">Loading your orders…</p>
       ) : !data || data.length === 0 ? (
