@@ -79,20 +79,38 @@ function Checkout() {
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const payload = {
+      items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      deliveryAddress: address,
+      contactPhone: phone || null,
+      notes: notes || null,
+    };
+
+    if (!navigator.onLine) {
+      enqueue("order", payload);
+      clear();
+      track("checkout_queued_offline", { items: payload.items.length, value: subtotal });
+      toast.success("Saved offline — we'll send your order the moment you're back online.");
+      navigate({ to: "/orders" });
+      return;
+    }
+
     setBusy(true);
     try {
-      const order = await submit({
-        data: {
-          items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-          deliveryAddress: address,
-          contactPhone: phone || null,
-          notes: notes || null,
-        },
-      });
+      const order = await submit({ data: payload });
       clear();
+      track("checkout_completed", { reference: order.reference, value: order.total });
       toast.success(`Order ${order.reference} placed`);
       navigate({ to: "/orders" });
     } catch (error) {
+      if (!navigator.onLine) {
+        enqueue("order", payload);
+        clear();
+        track("checkout_queued_offline", { items: payload.items.length, value: subtotal });
+        toast.success("Saved offline — we'll send your order once you reconnect.");
+        navigate({ to: "/orders" });
+        return;
+      }
       toast.error(error instanceof Error ? error.message : "Could not place your order");
     } finally {
       setBusy(false);
@@ -102,6 +120,12 @@ function Checkout() {
   return (
     <div className="px-4 py-8">
       <h1 className="text-4xl leading-none">Checkout</h1>
+      {!online && (
+        <p className="mt-4 rounded-md border border-gold/40 bg-card p-3 text-xs text-muted-foreground">
+          You&apos;re offline. You can still place this order — it will be sent automatically as soon
+          as your connection returns.
+        </p>
+      )}
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>
           <label htmlFor="address" className="label-caps text-muted-foreground">
