@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Leaf } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 const KEY = "morelife.age.verified.v1";
 
@@ -7,11 +8,14 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"checking" | "asking" | "allowed" | "denied">("checking");
 
   useEffect(() => {
-    setStatus(window.localStorage.getItem(KEY) === "yes" ? "allowed" : "asking");
+    const verified = window.localStorage.getItem(KEY) === "yes";
+    setStatus(verified ? "allowed" : "asking");
+    if (!verified) track("age_gate_shown");
   }, []);
 
   if (status === "checking") return null;
   if (status === "allowed") return <>{children}</>;
+
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-background px-6">
@@ -25,16 +29,20 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
             </p>
             <div className="mt-8 flex flex-col gap-3">
               <button
-                onClick={() => {
-                  window.localStorage.setItem(KEY, "yes");
-                  setStatus("allowed");
-                }}
-                className="w-full rounded-md bg-primary px-4 py-3 label-caps text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                Yes, I am 18 or older
-              </button>
-              <button
-                onClick={() => setStatus("denied")}
+              onClick={() => {
+                window.localStorage.setItem(KEY, "yes");
+                track("age_gate_confirmed");
+                setStatus("allowed");
+              }}
+              className="w-full rounded-md bg-primary px-4 py-3 label-caps text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              Yes, I am 18 or older
+            </button>
+            <button
+              onClick={() => {
+                track("age_gate_declined");
+                setStatus("denied");
+              }}
                 className="w-full rounded-md border border-border px-4 py-3 label-caps text-muted-foreground transition-colors hover:bg-secondary"
               >
                 No, I&apos;m not

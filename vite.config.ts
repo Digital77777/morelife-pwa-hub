@@ -23,6 +23,8 @@ export default defineConfig({
         devOptions: { enabled: false },
         manifest: false,
         workbox: {
+          // Adds the push + notification-click handlers to the generated worker.
+          importScripts: ["/push-sw.js"],
           globDirectory: ".output/public",
           globPatterns: ["**/*.{js,css,woff2,png,svg,ico}"],
           navigateFallback: "/",

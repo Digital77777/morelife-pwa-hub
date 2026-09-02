@@ -17,6 +17,7 @@ import { CartProvider } from "@/lib/cart";
 import { AgeGate } from "@/components/AgeGate";
 import { AppShell } from "@/components/AppShell";
 import { registerServiceWorker } from "@/lib/pwa";
+import { OutboxSync } from "@/components/OutboxSync";
 
 function NotFoundComponent() {
   return (
@@ -142,6 +143,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
+        <OutboxSync />
         <AgeGate>
           <AppShell>
             {/* Required: nested routes render here. */}
