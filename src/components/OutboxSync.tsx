@@ -4,9 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/orders.functions";
 import { sendAnalyticsPayload, type AnalyticsPayload } from "@/lib/analytics";
-import { outboxItems, setOutboxHandlers, startOutboxSync, subscribeToOutbox } from "@/lib/outbox";
+import { setOutboxHandlers, startOutboxSync } from "@/lib/outbox";
 
-type QueuedOrder = Parameters<typeof placeOrder>[0]["data"];
+export type QueuedOrder = {
+  items: { productId: string; quantity: number }[];
+  deliveryAddress: string;
+  contactPhone: string | null;
+  notes: string | null;
+};
 
 /**
  * Registers the offline outbox handlers and keeps them flushing whenever the
@@ -28,18 +33,7 @@ export function OutboxSync() {
       },
     });
 
-    let previousOrders = outboxItems().filter((i) => i.kind === "order").length;
-    const unsubscribe = subscribeToOutbox((items) => {
-      const orders = items.filter((i) => i.kind === "order").length;
-      previousOrders = orders;
-    });
-
-    const stop = startOutboxSync();
-    return () => {
-      unsubscribe();
-      stop();
-      void previousOrders;
-    };
+    return startOutboxSync();
   }, [submitOrder, queryClient]);
 
   return null;
