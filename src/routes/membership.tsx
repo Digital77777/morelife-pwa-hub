@@ -5,6 +5,8 @@ import { Leaf } from "lucide-react";
 import { getMyProfile } from "@/lib/profile.functions";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { PushToggle } from "@/components/PushToggle";
+import { useRoles } from "@/hooks/use-roles";
 
 export const Route = createFileRoute("/membership")({
   head: () => ({
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/membership")({
 
 function Membership() {
   const { session, loading } = useSession();
+  const { isAdmin } = useRoles();
   const fetchProfile = useServerFn(getMyProfile);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -81,6 +84,17 @@ function Membership() {
         {profile?.phone && <p>Phone: {profile.phone}</p>}
         {profile?.delivery_address && <p>Delivery: {profile.delivery_address}</p>}
       </div>
+
+      <PushToggle />
+
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="mt-4 block rounded-md border border-primary/50 px-4 py-3 text-center label-caps text-primary"
+        >
+          Open club admin
+        </Link>
+      )}
 
       <button
         onClick={signOut}
