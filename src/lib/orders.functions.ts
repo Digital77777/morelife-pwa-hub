@@ -128,5 +128,18 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     if (iErr) throw new Error(iErr.message);
 
+    // Confirmation alert — never let a notification failure fail the order.
+    try {
+      const { sendPushToUser } = await import("./push.server");
+      await sendPushToUser(context.userId, {
+        title: "Order received",
+        body: `${order.reference} — we've got your order and will confirm shortly.`,
+        url: "/orders",
+        tag: `order-${order.id}`,
+      });
+    } catch (err) {
+      console.error("[orders] confirmation push failed", err);
+    }
+
     return { id: order.id, reference: order.reference, total };
   });
