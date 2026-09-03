@@ -18,6 +18,9 @@ import { AgeGate } from "@/components/AgeGate";
 import { AppShell } from "@/components/AppShell";
 import { registerServiceWorker } from "@/lib/pwa";
 import { OutboxSync } from "@/components/OutboxSync";
+import { ConfigError } from "@/components/ConfigError";
+import { isSupabaseConfigError, missingSupabaseEnv } from "@/lib/env-check";
+
 
 function NotFoundComponent() {
   return (
