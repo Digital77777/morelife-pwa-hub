@@ -134,21 +134,29 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const missingEnv = missingSupabaseEnv();
+  const configured = missingEnv.length === 0;
 
   useEffect(() => {
     registerServiceWorker();
   }, []);
 
   useEffect(() => {
+    if (!configured) return;
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
     return () => data.subscription.unsubscribe();
-  }, [router, queryClient]);
+  }, [router, queryClient, configured]);
+
+  if (!configured) {
+    return <ConfigError missing={missingEnv} />;
+  }
 
   return (
+
     <QueryClientProvider client={queryClient}>
       <CartProvider>
         <OutboxSync />
