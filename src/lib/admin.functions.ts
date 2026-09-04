@@ -365,3 +365,100 @@ export const getAnalyticsSummary = createServerFn({ method: "GET" })
       memberCount: memberCount ?? 0,
     } satisfies AnalyticsSummary;
   });
+
+/* -------------------------------- members -------------------------------- */
+
+export type AdminMember = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  phone: string | null;
+  delivery_address: string | null;
+  member_number: string;
+  created_at: string;
+  roles: string[];
+  order_count: number;
+};
+
+export const listMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: profiles, error }, { data: roles }, { data: orders }] = await Promise.all([
+      context.supabase
+        .from("profiles")
+        .select("id, display_name, phone, delivery_address, member_number, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      context.supabase.from("user_roles").select("user_id, role"),
+      context.supabase.from("orders").select("user_id"),
+    ]);
+    if (error) throw new Error(error.message);
+
+    const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const emails = new Map((authList?.users ?? []).map((u) => [u.id, u.email ?? null]));
+
+    const roleMap = new Map<string, string[]>();
+    for (const r of roles ?? [])
+      roleMap.set(r.user_id, [...(roleMap.get(r.user_id) ?? []), r.role as string]);
+    const orderMap = new Map<string, number>();
+    for (const o of orders ?? []) orderMap.set(o.user_id, (orderMap.get(o.user_id) ?? 0) + 1);
+
+    return (profiles ?? []).map((p) => ({
+      ...p,
+      email: emails.get(p.id) ?? null,
+      roles: roleMap.get(p.id) ?? [],
+      order_count: orderMap.get(p.id) ?? 0,
+    })) satisfies AdminMember[];
+  });
+
+export const createMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        email: z.string().trim().email().max(200),
+        password: z.string().min(8).max(200),
+        display_name: z.string().trim().min(2).max(120),
+        phone: z.string().trim().max(40).optional().nullable(),
+        delivery_address: z.string().trim().max(500).optional().nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { display_name: data.display_name, phone: data.phone ?? null },
+    });
+    if (error) throw new Error(error.message);
+    const userId = created.user?.id;
+    if (!userId) throw new Error("Could not create the member account.");
+
+    const { data: profile, error: pErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        {
+          id: userId,
+          display_name: data.display_name,
+          phone: data.phone ?? null,
+          delivery_address: data.delivery_address ?? null,
+        },
+        { onConflict: "id" },
+      )
+      .select("member_number")
+      .single();
+    if (pErr) throw new Error(pErr.message);
+
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: userId, role: "member" }, { onConflict: "user_id,role" });
+
+    return { id: userId, member_number: profile?.member_number ?? null };
+  });
