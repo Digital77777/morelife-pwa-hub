@@ -19,6 +19,7 @@ const LINKS = [
   { to: "/admin/orders", label: "Orders", exact: false },
   { to: "/admin/products", label: "Products", exact: false },
   { to: "/admin/categories", label: "Categories", exact: false },
+  { to: "/admin/members", label: "Members", exact: false },
 ] as const;
 
 function AdminLayout() {
