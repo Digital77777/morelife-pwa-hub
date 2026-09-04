@@ -24,8 +24,25 @@ export type CatalogCategory = {
 };
 
 function publicClient() {
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  const url = process.env.SUPABASE_URL!;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    (import.meta.env as Record<string, string | undefined>).VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "";
+  const url =
+    process.env.SUPABASE_URL ||
+    (import.meta.env as Record<string, string | undefined>).VITE_SUPABASE_URL ||
+    "";
+
+  if (!url || !key) {
+    const missing = [
+      ...(!url ? ["SUPABASE_URL"] : []),
+      ...(!key ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
+    ];
+    throw new Error(
+      `Missing Supabase environment variable(s): ${missing.join(", ")}. Set them in your hosting environment.`,
+    );
+  }
+
   return createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
